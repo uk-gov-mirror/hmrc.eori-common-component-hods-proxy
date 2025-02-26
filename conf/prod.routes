@@ -16,4 +16,6 @@ PUT         /update-verified-email                @uk.gov.hmrc.customs.hodsproxy
 
 GET         /vat-known-facts-control-list         @uk.gov.hmrc.customs.hodsproxy.controllers.VatKnownFactsControlListController.get()
 
+POST        /register-subscribe-without-id        @uk.gov.hmrc.customs.hodsproxy.controllers.RegisterSubscribeWithoutIdController.post()
+
 ->          /                                     health.Routes

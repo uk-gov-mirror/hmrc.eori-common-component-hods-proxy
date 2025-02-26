@@ -82,3 +82,11 @@ class RegistrationDisplayController @Inject() (
   cc: ControllerComponents
 )(implicit ec: ExecutionContext)
     extends ProxyPostController(connector, auth, cc)
+
+@Singleton
+class RegisterSubscribeWithoutIdController @Inject() (
+  connector: RegisterSubscribeWithoutIdConnector,
+  auth: BackendAuthComponents,
+  cc: ControllerComponents
+)(implicit ec: ExecutionContext)
+    extends ProxyPostController(connector, auth, cc)

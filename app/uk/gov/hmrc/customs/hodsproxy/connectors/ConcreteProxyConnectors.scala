@@ -127,3 +127,16 @@ class UpdateVerifiedEmailConnector @Inject() (
   override val serviceName: String    = "update-verified-email"
   override val metricsId: MetricsEnum = UPDATE_VERIFIED_EMAIL
 }
+
+@Singleton
+class RegisterSubscribeWithoutIdConnector @Inject() (
+  http: HttpClient,
+  config: ServicesConfig,
+  metrics: CdsMetrics,
+  headerGenerator: HeaderGenerator
+)(implicit ec: ExecutionContext)
+    extends ProxyConnector(http, config, metrics, headerGenerator) {
+
+  override val serviceName: String    = "register-subscribe-without-id"
+  override val metricsId: MetricsEnum = MetricsEnum.REGISTER_WITHOUT_ID
+}
