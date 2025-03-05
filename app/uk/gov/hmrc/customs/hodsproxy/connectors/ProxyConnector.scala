@@ -19,6 +19,7 @@ package uk.gov.hmrc.customs.hodsproxy.connectors
 import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json.JsValue
+import uk.gov.hmrc.customs.hodsproxy.connectors.HeaderGenerator.X_CORRELATION_ID
 import uk.gov.hmrc.customs.hodsproxy.metrics.CdsMetrics
 import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum._
 import uk.gov.hmrc.http.{HttpClient, _}
@@ -63,7 +64,9 @@ abstract class ProxyConnector @Inject() (
 
     implicit val hc = HeaderCarrier(extraHeaders = headerGenerator.headersForMDG(bearerToken))
     // $COVERAGE-OFF$Loggers
-    logger.info(s"[$serviceName][Connector] POST Url: $url")
+    logger.info(
+      s"[$serviceName][Connector] POST Url: $url Correlation ID: ${hc.extraHeaders.find(_._1 == X_CORRELATION_ID)}"
+    )
     // $COVERAGE-ON
 
     makeRequest(http.POST[JsValue, HttpResponse](url, requestData))
