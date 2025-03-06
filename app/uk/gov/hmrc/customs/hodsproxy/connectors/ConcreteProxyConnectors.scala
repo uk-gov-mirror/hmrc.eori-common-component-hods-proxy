@@ -16,13 +16,21 @@
 
 package uk.gov.hmrc.customs.hodsproxy.connectors
 
+import play.api.Logger
+import play.api.http.HeaderNames.{ACCEPT, AUTHORIZATION, CONTENT_TYPE, DATE, X_FORWARDED_HOST}
+import play.api.http.MimeTypes
+import play.api.libs.json.JsValue
+import uk.gov.hmrc.customs.hodsproxy.connectors.HeaderGenerator.X_CORRELATION_ID
 import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum._
 import uk.gov.hmrc.customs.hodsproxy.metrics.{CdsMetrics, MetricsEnum}
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.time.{Clock, ZoneId, ZonedDateTime}
+import java.time.format.DateTimeFormatter
+import java.util.UUID
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class RegisterWithoutIdConnector @Inject() (
@@ -137,6 +145,34 @@ class RegisterSubscribeWithoutIdConnector @Inject() (
 )(implicit ec: ExecutionContext)
     extends ProxyConnector(http, config, metrics, headerGenerator) {
 
+  private val logger       = Logger(this.getClass)
+  private val clock: Clock = Clock.systemDefaultZone()
+
   override val serviceName: String    = "register-subscribe-without-id"
   override val metricsId: MetricsEnum = MetricsEnum.REGISTER_WITHOUT_ID
+
+  override def post(requestData: JsValue): Future[HttpResponse] = {
+    val url = baseUrl(serviceName)
+
+    val headers = Seq(
+      DATE -> DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'").format(
+        ZonedDateTime.now(clock.withZone(ZoneId.of("GMT")))
+      ),
+      X_CORRELATION_ID -> UUID.randomUUID().toString,
+      X_FORWARDED_HOST -> "MDTP",
+      CONTENT_TYPE     -> MimeTypes.JSON,
+      ACCEPT           -> MimeTypes.JSON,
+      AUTHORIZATION    -> s"Bearer $bearerToken"
+    )
+
+    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headers)
+    // $COVERAGE-OFF$Loggers
+    logger.info(
+      s"[$serviceName][Connector] POST Url: $url Correlation ID: ${hc.extraHeaders.find(_._1 == X_CORRELATION_ID)}"
+    )
+    // $COVERAGE-ON
+
+    makeRequest(http.POST[JsValue, HttpResponse](url, requestData))
+  }
+
 }

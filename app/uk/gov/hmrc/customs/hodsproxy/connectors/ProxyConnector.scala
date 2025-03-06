@@ -85,7 +85,7 @@ abstract class ProxyConnector @Inject() (
 
   protected def generateHeaders: Seq[(String, String)] = headerGenerator.generate(bearerToken)
 
-  private def makeRequest(httpRequest: => Future[HttpResponse]) = {
+  protected[ProxyConnector] def makeRequest(httpRequest: => Future[HttpResponse]): Future[HttpResponse] = {
     val timerContext = metrics.startTimer(metricsId)
     httpRequest map { response =>
       timerContext.stop()

@@ -33,6 +33,9 @@ trait ExternalServicesStubs {
   val RegWithoutIdServiceContext = "registrations/registerwithoutid/v1"
   val RegWithoutIdServiceUrl     = urlMatching("/" + RegWithoutIdServiceContext)
 
+  val RegSubWithoutIdServiceContext = "taxud/txe13/eori/subscription/v1"
+  val RegSubWithoutIdServiceUrl     = urlMatching("/" + RegSubWithoutIdServiceContext)
+
   val UpdateVerifiedEmailContext = "subscriptions/updateverifiedemail/v1"
   val UpdateVerifiedEmailUrl     = urlMatching("/" + UpdateVerifiedEmailContext)
 
@@ -56,6 +59,9 @@ trait ExternalServicesStubs {
 
   def setRegWithoutIdToReturnTheResponse(response: String, status: Int): Unit =
     stubPostCall(RegWithoutIdServiceUrl, response, status)
+
+  def setRegSubWithoutIdToReturnTheResponse(response: String, status: Int): Unit =
+    stubPostCall(RegSubWithoutIdServiceUrl, response, status)
 
   def stubUpdateVerifiedEmailResponse(response: String, status: Int): Unit =
     stubPutCall(UpdateVerifiedEmailUrl, response, status)
