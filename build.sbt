@@ -7,7 +7,7 @@ import scala.language.postfixOps
 name := "eori-common-component-hods-proxy"
 ThisBuild / majorVersion := 0
 PlayKeys.devSettings := Seq("play.server.http.port" -> "6753")
-ThisBuild / scalaVersion := "2.13.12"
+ThisBuild / scalaVersion := "2.13.16"
 
 lazy val commonSettings: Seq[Setting[_]] = defaultSettings()
 
