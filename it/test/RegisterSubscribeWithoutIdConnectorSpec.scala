@@ -28,7 +28,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.customs.hodsproxy.connectors.{HeaderGenerator, RegisterSubscribeWithoutIdConnector}
 import uk.gov.hmrc.customs.hodsproxy.metrics.CdsMetrics
 import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum.REGISTER_WITHOUT_ID
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import util.ExternalServicesStubs
 
@@ -42,7 +42,7 @@ class RegisterSubscribeWithoutIdConnectorSpec extends IntegrationTestSpec with E
   private val mockServicesConfig = mock[ServicesConfig]
 
   private val metrics = app.injector.instanceOf[CdsMetrics]
-  private val httpClient = app.injector.instanceOf[HttpClient]
+  private val httpClient = app.injector.instanceOf[HttpClientV2]
 
   private val connector = new RegisterSubscribeWithoutIdConnector(httpClient, mockServicesConfig, metrics, mockHeaderGenerator)
 

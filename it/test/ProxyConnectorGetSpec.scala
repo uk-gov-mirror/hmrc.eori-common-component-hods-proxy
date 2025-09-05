@@ -24,7 +24,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.customs.hodsproxy.connectors.{HeaderGenerator, ProxyConnector}
 import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum.SUBSCRIPTION_STATUS
 import uk.gov.hmrc.customs.hodsproxy.metrics.{CdsMetrics, MetricsEnum}
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import util.ExternalServicesStubs
 
@@ -35,7 +35,7 @@ class ProxyConnectorGetSpec extends IntegrationTestSpec with ExternalServicesStu
   private val mockHeaderGenerator = mock[HeaderGenerator]
   private val mockServicesConfig  = mock[ServicesConfig]
   private val metrics             = app.injector.instanceOf[CdsMetrics]
-  private val httpClient          = app.injector.instanceOf[HttpClient]
+  private val httpClient          = app.injector.instanceOf[HttpClientV2]
 
   private val serviceBearerToken = "1One2Two"
 

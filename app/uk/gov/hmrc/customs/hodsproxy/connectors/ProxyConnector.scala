@@ -18,19 +18,21 @@ package uk.gov.hmrc.customs.hodsproxy.connectors
 
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.customs.hodsproxy.connectors.HeaderGenerator.X_CORRELATION_ID
 import uk.gov.hmrc.customs.hodsproxy.metrics.CdsMetrics
 import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum._
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.net.URI
 import javax.inject.Inject
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class ProxyConnector @Inject() (
-  http: HttpClient,
+  http: HttpClientV2,
   config: ServicesConfig,
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
@@ -45,42 +47,42 @@ abstract class ProxyConnector @Inject() (
   def baseUrl(serviceName: String): String =
     config.baseUrl(serviceName) + config.getString(s"microservice.services.$serviceName.context")
 
-  lazy val bearerToken = config.getString(s"microservice.services.$serviceName.bearer-token")
+  lazy val bearerToken: String = config.getString(s"microservice.services.$serviceName.bearer-token")
 
   def get(queryParams: Map[String, Seq[String]]): Future[HttpResponse] = {
     val params: immutable.Iterable[(String, String)] = queryParams.flatten[(String, String)](a => a._2.map((a._1, _)))
     val url                                          = baseUrl(serviceName) + "?" + params.map(a => a._1 + "=" + a._2).mkString("&")
 
-    implicit val hc = HeaderCarrier(extraHeaders = headerGenerator.headersForMDGGet(bearerToken))
+    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headerGenerator.headersForMDGGet(bearerToken))
     // $COVERAGE-OFF$Loggers
     logger.info(s"[$serviceName][Connector] GET url: $url")
     // $COVERAGE-ON
 
-    makeRequest(http.GET(url))
+    makeRequest(http.get(URI.create(url).toURL).execute)
   }
 
   def post(requestData: JsValue): Future[HttpResponse] = {
     val url = baseUrl(serviceName)
 
-    implicit val hc = HeaderCarrier(extraHeaders = headerGenerator.headersForMDG(bearerToken))
+    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headerGenerator.headersForMDG(bearerToken))
     // $COVERAGE-OFF$Loggers
     logger.info(
       s"[$serviceName][Connector] POST Url: $url Correlation ID: ${hc.extraHeaders.find(_._1 == X_CORRELATION_ID)}"
     )
     // $COVERAGE-ON
 
-    makeRequest(http.POST[JsValue, HttpResponse](url, requestData))
+    makeRequest(http.post(URI.create(url).toURL).withBody(Json.toJson(requestData)).execute[HttpResponse])
   }
 
   def put(requestData: JsValue): Future[HttpResponse] = {
     val url = baseUrl(serviceName)
 
-    implicit val hc = HeaderCarrier(extraHeaders = headerGenerator.headersForMDG(bearerToken))
+    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headerGenerator.headersForMDG(bearerToken))
     // $COVERAGE-OFF$Loggers
     logger.info(s"[$serviceName][Connector] PUT Url: $url")
     // $COVERAGE-ON
 
-    makeRequest(http.PUT[JsValue, HttpResponse](url, requestData))
+    makeRequest(http.put(URI.create(url).toURL).withBody(requestData).execute[HttpResponse])
   }
 
   protected def generateHeaders: Seq[(String, String)] = headerGenerator.generate(bearerToken)

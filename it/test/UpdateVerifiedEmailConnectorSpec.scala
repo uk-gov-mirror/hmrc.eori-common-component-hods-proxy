@@ -25,7 +25,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.customs.hodsproxy.connectors.{HeaderGenerator, UpdateVerifiedEmailConnector}
 import uk.gov.hmrc.customs.hodsproxy.metrics.CdsMetrics
 import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum.UPDATE_VERIFIED_EMAIL
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import util.ExternalServicesStubs
 
@@ -39,7 +39,7 @@ class UpdateVerifiedEmailConnectorSpec extends IntegrationTestSpec with External
   private val mockServicesConfig  = mock[ServicesConfig]
 
   private val metrics    = app.injector.instanceOf[CdsMetrics]
-  private val httpClient = app.injector.instanceOf[HttpClient]
+  private val httpClient = app.injector.instanceOf[HttpClientV2]
 
   private val connector = new UpdateVerifiedEmailConnector(httpClient, mockServicesConfig, metrics, mockHeaderGenerator)
 

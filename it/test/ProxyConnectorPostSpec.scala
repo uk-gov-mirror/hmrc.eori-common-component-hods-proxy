@@ -26,7 +26,7 @@ import uk.gov.hmrc.customs.hodsproxy.connectors.{HeaderGenerator, ProxyConnector
 import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum.REGISTER_WITHOUT_ID
 import uk.gov.hmrc.customs.hodsproxy.metrics.{CdsMetrics, MetricsEnum}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.client.HttpClientV2
 import util.ExternalServicesStubs
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -39,7 +39,7 @@ class ProxyConnectorPostSpec extends IntegrationTestSpec with ExternalServicesSt
   private val mockServicesConfig  = mock[ServicesConfig]
 
   private val metrics    = app.injector.instanceOf[CdsMetrics]
-  private val httpClient = app.injector.instanceOf[HttpClient]
+  private val httpClient = app.injector.instanceOf[HttpClientV2]
 
   private val connector = new ProxyConnector(httpClient, mockServicesConfig, metrics, mockHeaderGenerator) {
     val metricsId           = MetricsEnum.REGISTER_WITHOUT_ID

@@ -20,15 +20,17 @@ import play.api.Logger
 import play.api.http.Status
 import uk.gov.hmrc.customs.hodsproxy.metrics.CdsMetrics
 import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum.{MetricsEnum, VAT_KNOWN_FACTS_CONTROL_LIST}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.net.URI
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class VatKnownFactsControlListConnector @Inject() (
-  http: HttpClient,
+  http: HttpClientV2,
   config: ServicesConfig,
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
@@ -45,7 +47,7 @@ class VatKnownFactsControlListConnector @Inject() (
 
     logger.info(s"[$serviceName][Connector] GET url: $url")
 
-    makeDesRequest(http.GET(url))
+    makeDesRequest(http.get(URI.create(url).toURL).execute)
   }
 
   private def makeDesRequest(httpRequest: => Future[HttpResponse]): Future[HttpResponse] = {

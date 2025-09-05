@@ -19,13 +19,15 @@ package uk.gov.hmrc.customs.hodsproxy.connectors
 import play.api.Logger
 import play.api.http.HeaderNames.{ACCEPT, AUTHORIZATION, CONTENT_TYPE, DATE, X_FORWARDED_HOST}
 import play.api.http.MimeTypes
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.customs.hodsproxy.connectors.HeaderGenerator.X_CORRELATION_ID
 import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum._
 import uk.gov.hmrc.customs.hodsproxy.metrics.{CdsMetrics, MetricsEnum}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.net.URI
 import java.time.{Clock, ZoneId, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -34,7 +36,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class RegisterWithoutIdConnector @Inject() (
-  http: HttpClient,
+  http: HttpClientV2,
   config: ServicesConfig,
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
@@ -47,7 +49,7 @@ class RegisterWithoutIdConnector @Inject() (
 
 @Singleton
 class SubscriptionConnector @Inject() (
-  http: HttpClient,
+  http: HttpClientV2,
   config: ServicesConfig,
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
@@ -60,7 +62,7 @@ class SubscriptionConnector @Inject() (
 
 @Singleton
 class RegisterWithIdConnector @Inject() (
-  http: HttpClient,
+  http: HttpClientV2,
   config: ServicesConfig,
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
@@ -73,7 +75,7 @@ class RegisterWithIdConnector @Inject() (
 
 @Singleton
 class RegisterWithEoriAndIdConnector @Inject() (
-  http: HttpClient,
+  http: HttpClientV2,
   config: ServicesConfig,
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
@@ -86,7 +88,7 @@ class RegisterWithEoriAndIdConnector @Inject() (
 
 @Singleton
 class SubscriptionStatusConnector @Inject() (
-  http: HttpClient,
+  http: HttpClientV2,
   config: ServicesConfig,
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
@@ -99,7 +101,7 @@ class SubscriptionStatusConnector @Inject() (
 
 @Singleton
 class SubscriptionDisplayConnector @Inject() (
-  http: HttpClient,
+  http: HttpClientV2,
   config: ServicesConfig,
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
@@ -112,7 +114,7 @@ class SubscriptionDisplayConnector @Inject() (
 
 @Singleton
 class RegistrationDisplayConnector @Inject() (
-  http: HttpClient,
+  http: HttpClientV2,
   config: ServicesConfig,
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
@@ -125,7 +127,7 @@ class RegistrationDisplayConnector @Inject() (
 
 @Singleton
 class UpdateVerifiedEmailConnector @Inject() (
-  http: HttpClient,
+  http: HttpClientV2,
   config: ServicesConfig,
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
@@ -138,7 +140,7 @@ class UpdateVerifiedEmailConnector @Inject() (
 
 @Singleton
 class RegisterSubscribeWithoutIdConnector @Inject() (
-  http: HttpClient,
+  http: HttpClientV2,
   config: ServicesConfig,
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
@@ -172,7 +174,7 @@ class RegisterSubscribeWithoutIdConnector @Inject() (
     )
     // $COVERAGE-ON
 
-    makeRequest(http.POST[JsValue, HttpResponse](url, requestData))
+    makeRequest(http.post(URI.create(url).toURL).withBody(Json.toJson(requestData)).execute[HttpResponse])
   }
 
 }
