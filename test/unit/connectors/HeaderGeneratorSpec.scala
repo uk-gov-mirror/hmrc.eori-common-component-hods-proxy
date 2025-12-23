@@ -25,9 +25,9 @@ import play.api.http.MimeTypes
 import uk.gov.hmrc.customs.hodsproxy.connectors.HeaderGenerator
 
 class HeaderGeneratorSpec extends BaseSpec with MockitoSugar {
-  val authToken   = "someToken"
-  val in: Instant = Instant.parse("2015-08-13T13:28:22Z")
-  val fixedClock  = Clock.fixed(in, ZoneId.systemDefault())
+  val authToken         = "someToken"
+  val in: Instant       = Instant.parse("2015-08-13T13:28:22Z")
+  val fixedClock: Clock = Clock.fixed(in, ZoneId.systemDefault())
 
   object testHeaderGenerator extends HeaderGenerator {
     override val clock: Clock = fixedClock

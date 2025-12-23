@@ -19,15 +19,18 @@ package integration
 import com.codahale.metrics.SharedMetricRegistries
 import com.github.tomakehurst.wiremock.client.WireMock.{equalTo, getRequestedFor, urlEqualTo, verify}
 import org.scalatestplus.mockito.MockitoSugar
+import org.slf4j.LoggerFactory
 import play.api.Application
+import ch.qos.logback.classic.Logger
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.customs.hodsproxy.connectors.VatKnownFactsControlListConnector
 import uk.gov.hmrc.customs.hodsproxy.metrics.CdsMetrics
 import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum.VAT_KNOWN_FACTS_CONTROL_LIST
+import uk.gov.hmrc.play.bootstrap.tools.LogCapturing
 import util.ExternalServicesStubs
 
-class VatKnownFactsControlListConnectorSpec extends IntegrationTestSpec with MockitoSugar with ExternalServicesStubs {
+class VatKnownFactsControlListConnectorSpec extends IntegrationTestSpec with MockitoSugar with ExternalServicesStubs with LogCapturing {
 
   private val responseJson = """ {"response" :true} """
 
@@ -48,6 +51,11 @@ class VatKnownFactsControlListConnectorSpec extends IntegrationTestSpec with Moc
 
   private lazy val vatKnownFactsControlListConnector = app.injector.instanceOf[VatKnownFactsControlListConnector]
 
+  val connectorLogger: Logger =
+    LoggerFactory
+      .getLogger(classOf[VatKnownFactsControlListConnector])
+      .asInstanceOf[Logger]
+
   private val vrn = "123456789"
 
   "vat known facts connector" should {
@@ -56,11 +64,20 @@ class VatKnownFactsControlListConnectorSpec extends IntegrationTestSpec with Moc
 
       setVatKnownFactsToReturnTheResponse(vrn, responseJson, OK)
 
-      val result = await(vatKnownFactsControlListConnector.get(vrn))
+      withCaptureOfLoggingFrom(connectorLogger) { events =>
+        val res = vatKnownFactsControlListConnector.get(vrn)
+        whenReady(res) { result =>
+          events.collectFirst {
+            case event =>
+              event.getLevel.levelStr shouldBe "INFO"
+              event.getMessage.contains("[vat-known-facts-control-list][Connector] GET url:") shouldBe true
+          }.getOrElse(fail("No log was captured"))
 
-      result.status shouldBe OK
-      result.body shouldBe responseJson
-      verifyCorrectRequestWasMade("123456789")
+          result.status shouldBe OK
+          result.body shouldBe responseJson
+          verifyCorrectRequestWasMade("123456789")
+        }
+      }
     }
   }
 
@@ -70,22 +87,63 @@ class VatKnownFactsControlListConnectorSpec extends IntegrationTestSpec with Moc
     val previousSuccessCount = metrics.successCounters(VAT_KNOWN_FACTS_CONTROL_LIST).getCount
     val previousFailedCount  = metrics.failedCounters(VAT_KNOWN_FACTS_CONTROL_LIST).getCount
     setVatKnownFactsToReturnTheResponse(vrn, responseJson, INTERNAL_SERVER_ERROR)
+    
+    withCaptureOfLoggingFrom(connectorLogger) { events =>
+      val res = vatKnownFactsControlListConnector.get(vrn)
+      whenReady(res) { _ =>
+        events.collectFirst {
+          case event =>
+            event.getLevel.levelStr shouldBe "INFO"
+            event.getMessage.contains("[vat-known-facts-control-list][Connector] GET url:") shouldBe true
+        }.getOrElse(fail("No log was captured"))
 
-    await(vatKnownFactsControlListConnector.get(vrn))
+        metrics.failedCounters(VAT_KNOWN_FACTS_CONTROL_LIST).getCount should be(previousFailedCount + 1)
+        metrics.timers(VAT_KNOWN_FACTS_CONTROL_LIST).getCount should be(previousTimerCount + 1)
+        metrics.successCounters(VAT_KNOWN_FACTS_CONTROL_LIST).getCount should be(previousSuccessCount)
+      }
+    }
+  }
 
-    metrics.failedCounters(VAT_KNOWN_FACTS_CONTROL_LIST).getCount should be(previousFailedCount + 1)
-    metrics.timers(VAT_KNOWN_FACTS_CONTROL_LIST).getCount should be(previousTimerCount + 1)
-    metrics.successCounters(VAT_KNOWN_FACTS_CONTROL_LIST).getCount should be(previousSuccessCount)
+  "record timing and increase the Fail Counter when response is not found" in {
+
+    val previousTimerCount = metrics.timers(VAT_KNOWN_FACTS_CONTROL_LIST).getCount
+    val previousSuccessCount = metrics.successCounters(VAT_KNOWN_FACTS_CONTROL_LIST).getCount
+    val previousFailedCount = metrics.failedCounters(VAT_KNOWN_FACTS_CONTROL_LIST).getCount
+    setVatKnownFactsToReturnTheResponse(vrn, responseJson, NOT_FOUND)
+
+    withCaptureOfLoggingFrom(connectorLogger) { events =>
+      val res = vatKnownFactsControlListConnector.get(vrn)
+      whenReady(res) { _ =>
+        events.collectFirst {
+          case event =>
+            event.getLevel.levelStr shouldBe "INFO"
+            event.getMessage.contains("[vat-known-facts-control-list][Connector] GET url:") shouldBe true
+        }.getOrElse(fail("No log was captured"))
+
+        metrics.failedCounters(VAT_KNOWN_FACTS_CONTROL_LIST).getCount should be(previousFailedCount + 1)
+        metrics.timers(VAT_KNOWN_FACTS_CONTROL_LIST).getCount should be(previousTimerCount + 1)
+        metrics.successCounters(VAT_KNOWN_FACTS_CONTROL_LIST).getCount should be(previousSuccessCount)
+      }
+    }
   }
 
   "return correct result when service response is 5xx" in {
 
     setVatKnownFactsToReturnTheResponse(vrn, responseJson, INTERNAL_SERVER_ERROR)
 
-    val result = await(vatKnownFactsControlListConnector.get(vrn))
+    withCaptureOfLoggingFrom(connectorLogger) { events =>
+      val res = vatKnownFactsControlListConnector.get(vrn)
+      whenReady(res) { result =>
+        events.collectFirst {
+          case event =>
+            event.getLevel.levelStr shouldBe "INFO"
+            event.getMessage.contains("[vat-known-facts-control-list][Connector] GET url:") shouldBe true
+        }.getOrElse(fail("No log was captured"))
 
-    result.status shouldBe INTERNAL_SERVER_ERROR
-    result.body shouldBe responseJson
+        result.status shouldBe INTERNAL_SERVER_ERROR
+        result.body shouldBe responseJson
+      }
+    }
   }
 
   def verifyCorrectRequestWasMade(vrn: String): Unit =

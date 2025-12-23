@@ -16,25 +16,28 @@
 
 package integration
 
-import com.github.tomakehurst.wiremock.client.WireMock.{verify => wVerify, _}
+import ch.qos.logback.classic.Logger
+import com.github.tomakehurst.wiremock.client.WireMock.{verify as wVerify, *}
 import org.mockito.ArgumentMatchers.{anyString, endsWith}
-import org.mockito.Mockito.{when, reset => mreset}
+import org.mockito.Mockito.{when, reset as mreset}
 import org.scalatestplus.mockito.MockitoSugar
+import org.slf4j.LoggerFactory
 import play.api.http.HeaderNames.{ACCEPT, AUTHORIZATION, CONTENT_TYPE, DATE, X_FORWARDED_HOST}
 import play.api.http.MimeTypes
 import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, OK}
 import play.api.libs.json.Json
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.customs.hodsproxy.connectors.{HeaderGenerator, RegisterSubscribeWithoutIdConnector}
 import uk.gov.hmrc.customs.hodsproxy.metrics.CdsMetrics
 import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum.REGISTER_WITHOUT_ID
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.tools.LogCapturing
 import util.ExternalServicesStubs
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RegisterSubscribeWithoutIdConnectorSpec extends IntegrationTestSpec with ExternalServicesStubs with MockitoSugar {
+class RegisterSubscribeWithoutIdConnectorSpec extends IntegrationTestSpec with ExternalServicesStubs with MockitoSugar with LogCapturing {
 
   private val serviceBearerToken = "1234ABCD"
 
@@ -45,6 +48,10 @@ class RegisterSubscribeWithoutIdConnectorSpec extends IntegrationTestSpec with E
   private val httpClient = app.injector.instanceOf[HttpClientV2]
 
   private val connector = new RegisterSubscribeWithoutIdConnector(httpClient, mockServicesConfig, metrics, mockHeaderGenerator)
+  val connectorLogger: Logger =
+    LoggerFactory
+      .getLogger(classOf[RegisterSubscribeWithoutIdConnector])
+      .asInstanceOf[Logger]
 
   private val requestJson = """{"request":true}"""
   private val responseJson = """ {"response" :true} """
@@ -71,11 +78,21 @@ class RegisterSubscribeWithoutIdConnectorSpec extends IntegrationTestSpec with E
 
         setRegSubWithoutIdToReturnTheResponse(responseJson, OK)
 
-        val result = connector.post(Json.parse(requestJson)).futureValue
+        withCaptureOfLoggingFrom(connectorLogger) { events =>
+          val res = connector.post(Json.parse(requestJson))
+          whenReady(res) { result =>
+            events.collectFirst {
+              case event =>
+                event.getLevel.levelStr shouldBe "INFO"
+                event.getMessage.contains("[register-subscribe-without-id][Connector] POST Url:") shouldBe true
+                event.getMessage.contains("Correlation ID:") shouldBe true
+            }.getOrElse(fail("No log was captured"))
 
-        result.status shouldBe OK
-        result.body shouldBe responseJson
-        verifyCorrectRequestWasMade(requestJson)
+            result.status shouldBe OK
+            result.body shouldBe responseJson
+            verifyCorrectRequestWasMade(requestJson)
+          }
+        }
       }
 
       "record timing and increase the Success Counter when response is OK" in {
@@ -85,31 +102,61 @@ class RegisterSubscribeWithoutIdConnectorSpec extends IntegrationTestSpec with E
         val previousFailedCount = metrics.failedCounters(REGISTER_WITHOUT_ID).getCount
         setRegSubWithoutIdToReturnTheResponse(responseJson, OK)
 
-        await(connector.post(Json.parse(requestJson)))
+        withCaptureOfLoggingFrom(connectorLogger) { events =>
+          val res = connector.post(Json.parse(requestJson))
+          whenReady(res) { _ =>
+            events.collectFirst {
+              case event =>
+                event.getLevel.levelStr shouldBe "INFO"
+                event.getMessage.contains("[register-subscribe-without-id][Connector] POST Url:") shouldBe true
+                event.getMessage.contains("Correlation ID:") shouldBe true
+            }.getOrElse(fail("No log was captured"))
 
-        metrics.successCounters(REGISTER_WITHOUT_ID).getCount shouldBe previousSuccessCount + 1
-        metrics.timers(REGISTER_WITHOUT_ID).getCount shouldBe previousTimerCount + 1
-        metrics.failedCounters(REGISTER_WITHOUT_ID).getCount shouldBe previousFailedCount
+            metrics.successCounters(REGISTER_WITHOUT_ID).getCount shouldBe previousSuccessCount + 1
+            metrics.timers(REGISTER_WITHOUT_ID).getCount shouldBe previousTimerCount + 1
+            metrics.failedCounters(REGISTER_WITHOUT_ID).getCount shouldBe previousFailedCount
+          }
+        }
       }
 
       "return correct result when service response is not OK(200)" in {
 
         setRegSubWithoutIdToReturnTheResponse(responseJson, BAD_REQUEST)
 
-        val result = connector.post(Json.parse(requestJson)).futureValue
+        withCaptureOfLoggingFrom(connectorLogger) { events =>
+          val res = connector.post(Json.parse(requestJson))
+          whenReady(res) { result =>
+            events.collectFirst {
+              case event =>
+                event.getLevel.levelStr shouldBe "INFO"
+                event.getMessage.contains("[register-subscribe-without-id][Connector] POST Url:") shouldBe true
+                event.getMessage.contains("Correlation ID:") shouldBe true
+            }.getOrElse(fail("No log was captured"))
 
-        result.status shouldBe BAD_REQUEST
-        result.body shouldBe responseJson
+            result.status shouldBe BAD_REQUEST
+            result.body shouldBe responseJson
+          }
+        }
       }
 
       "return correct result when service response is 5xx" in {
 
         setRegSubWithoutIdToReturnTheResponse(responseJson, INTERNAL_SERVER_ERROR)
 
-        val result = connector.post(Json.parse(requestJson)).futureValue
+        withCaptureOfLoggingFrom(connectorLogger) { events =>
+          val res = connector.post(Json.parse(requestJson))
+          whenReady(res) { result =>
+            events.collectFirst {
+              case event =>
+                event.getLevel.levelStr shouldBe "INFO"
+                event.getMessage.contains("[register-subscribe-without-id][Connector] POST Url:") shouldBe true
+                event.getMessage.contains("Correlation ID:") shouldBe true
+            }.getOrElse(fail("No log was captured"))
 
-        result.status shouldBe INTERNAL_SERVER_ERROR
-        result.body shouldBe responseJson
+            result.status shouldBe INTERNAL_SERVER_ERROR
+            result.body shouldBe responseJson
+          }
+        }
       }
 
       "record timing and increase the Fail Counter when response is not OK (200)" in {

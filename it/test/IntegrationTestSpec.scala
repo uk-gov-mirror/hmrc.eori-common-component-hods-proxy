@@ -18,21 +18,23 @@ package integration
 
 import base.BaseSpec
 import com.codahale.metrics.SharedMetricRegistries
+import org.mockito.Mockito.*
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
-import play.api.inject.guice.GuiceApplicationBuilder
-import util.WireMockRunner
-import play.api.test.Helpers._
-import uk.gov.hmrc.internalauth.client._
-import uk.gov.hmrc.internalauth.client.test.{BackendAuthComponentsStub, StubBehaviour}
-import org.scalatestplus.mockito.MockitoSugar
-import org.mockito.Mockito._
 import play.api.inject.bind
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.Json
+import play.api.mvc.{AnyContent, ControllerComponents}
+import play.api.test.Helpers.*
+import uk.gov.hmrc.internalauth.client.*
+import uk.gov.hmrc.internalauth.client.test.{BackendAuthComponentsStub, StubBehaviour}
+import util.WireMockRunner
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.global
+import scala.concurrent.Future
 
 trait IntegrationTestSpec
   extends BaseSpec with ScalaFutures with BeforeAndAfterEach with BeforeAndAfterAll with GuiceOneAppPerSuite
@@ -43,8 +45,9 @@ trait IntegrationTestSpec
   val appConfig: Map[String, String] =
     Map("microservice.services.auth.host" -> Host, "microservice.services.auth.port" -> Port.toString)
 
-  implicit lazy val cc  = stubControllerComponents()
-  val mockStubBehaviour = mock[StubBehaviour]
+  implicit lazy val cc: ControllerComponents = stubControllerComponents(bodyParser = stubBodyParser(AnyContent(Json.parse("""{ "field": "value" }"""))))
+
+  val mockStubBehaviour: StubBehaviour = mock[StubBehaviour]
 
   def expectedPredicate(location: String): Predicate.Permission = Predicate.Permission(
     Resource(ResourceType("eori-common-component-hods-proxy"), ResourceLocation(location)),
@@ -57,7 +60,7 @@ trait IntegrationTestSpec
   when(mockStubBehaviour.stubAuth(Some(expectedPredicate("vat")), Retrieval.EmptyRetrieval)).thenReturn(Future.unit)
 
   implicit override lazy val app: Application = new GuiceApplicationBuilder()
-    .overrides(bind[BackendAuthComponents].toInstance(BackendAuthComponentsStub(mockStubBehaviour)(cc, global)))
+    .overrides(bind[BackendAuthComponents].toInstance(BackendAuthComponentsStub(mockStubBehaviour)(using cc, global)))
     .configure(appConfig).build()
 
   override def beforeAll(): Unit = startMockServer()

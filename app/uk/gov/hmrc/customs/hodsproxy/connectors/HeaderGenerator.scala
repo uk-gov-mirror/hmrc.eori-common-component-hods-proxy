@@ -28,11 +28,11 @@ import javax.inject.Singleton
 @Singleton
 class HeaderGenerator {
 
-  val clock = Clock.systemDefaultZone()
+  val clock: Clock = Clock.systemDefaultZone()
 
   def generate(bearerToken: String): Seq[(String, String)] =
     Seq(
-      DATE             -> DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(clock.withZone(ZoneId.of("GMT")))),
+      DATE -> DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(clock.withZone(ZoneId.of("GMT")))),
       X_CORRELATION_ID -> UUID.randomUUID().toString,
       X_FORWARDED_HOST -> "MDTP",
       CONTENT_TYPE     -> MimeTypes.JSON,

@@ -23,12 +23,11 @@ import scala.reflect.ClassTag
 
 trait Injector {
 
-  /**
-    * Clearing shared metrics registries to avoid `A metric named jvm.attribute.vendor already exists` error.
+  /** Clearing shared metrics registries to avoid `A metric named jvm.attribute.vendor already exists` error.
     *
-   * It appears very often with places with injector. This is enough solution for this problem.
+    * It appears very often with places with injector. This is enough solution for this problem.
     *
-   * Reference and other solutions: https://github.com/kenshoo/metrics-play/issues/74
+    * Reference and other solutions: https://github.com/kenshoo/metrics-play/issues/74
     */
   SharedMetricRegistries.clear()
 

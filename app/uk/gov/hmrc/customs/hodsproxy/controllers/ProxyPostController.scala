@@ -18,9 +18,9 @@ package uk.gov.hmrc.customs.hodsproxy.controllers
 
 import play.api.http.MimeTypes
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Results}
-import uk.gov.hmrc.customs.hodsproxy.connectors._
+import uk.gov.hmrc.customs.hodsproxy.connectors.*
 import uk.gov.hmrc.customs.managesubscription.controllers.Permissions.internalAuthPermission
-import uk.gov.hmrc.internalauth.client._
+import uk.gov.hmrc.internalauth.client.*
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import javax.inject.{Inject, Singleton}

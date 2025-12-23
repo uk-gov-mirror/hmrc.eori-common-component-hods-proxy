@@ -1,5 +1,5 @@
-import sbt.Keys._
-import sbt._
+import sbt.Keys.*
+import sbt.*
 import uk.gov.hmrc.DefaultBuildSettings
 import uk.gov.hmrc.DefaultBuildSettings.{addTestReportOption, defaultSettings}
 
@@ -7,9 +7,9 @@ import scala.language.postfixOps
 name := "eori-common-component-hods-proxy"
 ThisBuild / majorVersion := 0
 PlayKeys.devSettings := Seq("play.server.http.port" -> "6753")
-ThisBuild / scalaVersion := "2.13.16"
+ThisBuild / scalaVersion := "3.7.4"
 
-lazy val commonSettings: Seq[Setting[_]] = defaultSettings()
+lazy val commonSettings: Seq[Setting[?]] = defaultSettings()
 
 lazy val microservice = (project in file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
@@ -27,7 +27,7 @@ lazy val unitTestSettings =
       addTestReportOption(Test, "test-reports")
     )
 
-lazy val scoverageSettings: Seq[Setting[_]] = Seq(
+lazy val scoverageSettings: Seq[Setting[?]] = Seq(
   coverageExcludedPackages := List(
     "<empty>"
     , "Reverse.*"
@@ -42,7 +42,8 @@ lazy val scoverageSettings: Seq[Setting[_]] = Seq(
 scalastyleConfig := baseDirectory.value / "project" / "scalastyle-config.xml"
 
 scalacOptions ++= Seq (
-  "-Wconf:cat=unused-imports&src=routes/.*:s"
+  "-Wconf:src=routes/.*:s",
+  "-Wconf:msg=Flag.*repeatedly:s"
 )
 
 val it = project

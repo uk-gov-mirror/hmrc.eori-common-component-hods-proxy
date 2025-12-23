@@ -16,12 +16,13 @@
 
 package uk.gov.hmrc.customs.hodsproxy.connectors
 
-import play.api.Logger
+import play.api.Logging
 import play.api.http.HeaderNames.{ACCEPT, AUTHORIZATION, CONTENT_TYPE, DATE, X_FORWARDED_HOST}
 import play.api.http.MimeTypes
 import play.api.libs.json.{JsValue, Json}
+import play.api.libs.ws.writeableOf_JsValue
 import uk.gov.hmrc.customs.hodsproxy.connectors.HeaderGenerator.X_CORRELATION_ID
-import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum._
+import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum.*
 import uk.gov.hmrc.customs.hodsproxy.metrics.{CdsMetrics, MetricsEnum}
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
@@ -145,9 +146,8 @@ class RegisterSubscribeWithoutIdConnector @Inject() (
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
 )(implicit ec: ExecutionContext)
-    extends ProxyConnector(http, config, metrics, headerGenerator) {
+    extends ProxyConnector(http, config, metrics, headerGenerator) with Logging {
 
-  private val logger       = Logger(this.getClass)
   private val clock: Clock = Clock.systemDefaultZone()
 
   override val serviceName: String    = "register-subscribe-without-id"
@@ -168,11 +168,11 @@ class RegisterSubscribeWithoutIdConnector @Inject() (
     )
 
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headers)
-    // $COVERAGE-OFF$Loggers
+    // $COVERAGE-OFF$
     logger.info(
       s"[$serviceName][Connector] POST Url: $url Correlation ID: ${hc.extraHeaders.find(_._1 == X_CORRELATION_ID)}"
     )
-    // $COVERAGE-ON
+    // $COVERAGE-ON$
 
     makeRequest(http.post(URI.create(url).toURL).withBody(Json.toJson(requestData)).execute[HttpResponse])
   }

@@ -38,7 +38,7 @@ class ControllersSpec extends IntegrationTestSpec with ExternalServicesStubs {
     super.beforeEach()
 
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
-    .overrides(bind[BackendAuthComponents].toInstance(BackendAuthComponentsStub(mockStubBehaviour)(cc, global)))
+    .overrides(bind[BackendAuthComponents].toInstance(BackendAuthComponentsStub(mockStubBehaviour)(using cc, global)))
     .configure(
       appConfig ++ Seq(
         "microservice.services.vat-known-facts-control-list.port" -> Port,

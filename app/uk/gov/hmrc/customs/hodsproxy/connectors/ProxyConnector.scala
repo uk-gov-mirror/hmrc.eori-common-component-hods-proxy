@@ -16,14 +16,15 @@
 
 package uk.gov.hmrc.customs.hodsproxy.connectors
 
-import play.api.Logger
+import play.api.Logging
 import play.api.http.Status
 import play.api.libs.json.{JsValue, Json}
+import play.api.libs.ws.writeableOf_JsValue
 import uk.gov.hmrc.customs.hodsproxy.connectors.HeaderGenerator.X_CORRELATION_ID
 import uk.gov.hmrc.customs.hodsproxy.metrics.CdsMetrics
-import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.customs.hodsproxy.metrics.MetricsEnum.*
 import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.net.URI
@@ -37,9 +38,7 @@ abstract class ProxyConnector @Inject() (
   metrics: CdsMetrics,
   headerGenerator: HeaderGenerator
 )(implicit ec: ExecutionContext)
-    extends RawResponseReads {
-
-  private val logger = Logger(this.getClass)
+    extends RawResponseReads with Logging {
 
   val serviceName: String
   val metricsId: MetricsEnum
@@ -50,13 +49,14 @@ abstract class ProxyConnector @Inject() (
   lazy val bearerToken: String = config.getString(s"microservice.services.$serviceName.bearer-token")
 
   def get(queryParams: Map[String, Seq[String]]): Future[HttpResponse] = {
-    val params: immutable.Iterable[(String, String)] = queryParams.flatten[(String, String)](a => a._2.map((a._1, _)))
-    val url                                          = baseUrl(serviceName) + "?" + params.map(a => a._1 + "=" + a._2).mkString("&")
+    val params: immutable.Iterable[(String, String)] =
+      queryParams.flatten[(String, String)](using a => a._2.map((a._1, _)))
+    val url = baseUrl(serviceName) + "?" + params.map(a => a._1 + "=" + a._2).mkString("&")
 
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headerGenerator.headersForMDGGet(bearerToken))
-    // $COVERAGE-OFF$Loggers
+    // $COVERAGE-OFF$
     logger.info(s"[$serviceName][Connector] GET url: $url")
-    // $COVERAGE-ON
+    // $COVERAGE-ON$
 
     makeRequest(http.get(URI.create(url).toURL).execute)
   }
@@ -65,11 +65,11 @@ abstract class ProxyConnector @Inject() (
     val url = baseUrl(serviceName)
 
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headerGenerator.headersForMDG(bearerToken))
-    // $COVERAGE-OFF$Loggers
+    // $COVERAGE-OFF$
     logger.info(
       s"[$serviceName][Connector] POST Url: $url Correlation ID: ${hc.extraHeaders.find(_._1 == X_CORRELATION_ID)}"
     )
-    // $COVERAGE-ON
+    // $COVERAGE-ON$
 
     makeRequest(http.post(URI.create(url).toURL).withBody(Json.toJson(requestData)).execute[HttpResponse])
   }
@@ -78,9 +78,9 @@ abstract class ProxyConnector @Inject() (
     val url = baseUrl(serviceName)
 
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = headerGenerator.headersForMDG(bearerToken))
-    // $COVERAGE-OFF$Loggers
+    // $COVERAGE-OFF$
     logger.info(s"[$serviceName][Connector] PUT Url: $url")
-    // $COVERAGE-ON
+    // $COVERAGE-ON$
 
     makeRequest(http.put(URI.create(url).toURL).withBody(requestData).execute[HttpResponse])
   }
@@ -91,17 +91,23 @@ abstract class ProxyConnector @Inject() (
     val timerContext = metrics.startTimer(metricsId)
     httpRequest map { response =>
       timerContext.stop()
+      // $COVERAGE-OFF$
       logger.info(s"[$serviceName][Connector] - status: ${response.status}")
+      // $COVERAGE-ON$
       response.status match {
         case Status.OK =>
           metrics.incrementSuccessCounter(metricsId)
           response
         case status if Status.isServerError(status) =>
+          // $COVERAGE-OFF$
           logger.error(s"[$serviceName][Connector] - status: ${response.status}")
+          // $COVERAGE-ON$
           metrics.incrementFailedCounter(metricsId)
           response
         case _ =>
+          // $COVERAGE-OFF$
           logger.warn(s"[$serviceName][Connector] - status: ${response.status}")
+          // $COVERAGE-ON$
           metrics.incrementFailedCounter(metricsId)
           response
       }
