@@ -17,7 +17,8 @@ lazy val microservice = (project in file("."))
   .settings(commonSettings, scoverageSettings)
   .settings(
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
-    scoverageSettings
+    scoverageSettings,
+    excludeDependencies += ExclusionRule("org.lz4", "lz4-java")
   )
 
 lazy val unitTestSettings =

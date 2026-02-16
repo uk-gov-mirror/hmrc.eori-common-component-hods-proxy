@@ -3,11 +3,14 @@ import sbt._
 
 object AppDependencies {
 
-  val bootstrapVersion = "10.4.0"
+  val bootstrapVersion = "10.5.0"
 
   val compile: Seq[ModuleID] = Seq(
-    "uk.gov.hmrc"              %% "bootstrap-backend-play-30"      % bootstrapVersion,
-    "uk.gov.hmrc"              %% "internal-auth-client-play-30"   % "4.3.0"
+    "uk.gov.hmrc"              %% "bootstrap-backend-play-30"      % bootstrapVersion exclude("org.apache.commons", "commons-lang3"),
+    "org.apache.commons"        % "commons-lang3"                  % "3.18.0",
+    "uk.gov.hmrc"              %% "internal-auth-client-play-30"   % "4.3.0",
+    "at.yawk.lz4"               %  "lz4-java"                      % "1.10.3",
+    "ch.qos.logback"            % "logback-core"                   % "1.5.21",
   )
 
   val test: Seq[ModuleID] = Seq(
